@@ -1,9 +1,12 @@
-name: Build APK
+name: Build and Release APK
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -20,10 +23,15 @@ jobs:
         with:
           gradle-version: 8.7
 
-      - name: Build debug APK
+      - name: Build APK
         run: gradle assembleDebug --no-daemon
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Instants-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.0.${{ github.run_number }}"
+          cp app/build/outputs/apk/debug/app-debug.apk "Instants-$TAG.apk"
+          gh release create "$TAG" "Instants-$TAG.apk" \
+            --title "Instants $TAG" \
+            --notes "Unofficial personal wrapper for myinstants.com. All sounds and content belong to myinstants.com and its uploaders."
