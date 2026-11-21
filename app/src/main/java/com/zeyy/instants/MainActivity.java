@@ -3,318 +3,396 @@ package com.zeyy.instants;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.res.Configuration;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.Menu;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.WebChromeClient;
-import android.webkit.WebResourceError;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class MainActivity extends Activity {
     private static final String HOME = "https://www.myinstants.com/";
-    private static final String RECENT = "https://www.myinstants.com/en/recent/";
-    private static final String UPLOAD = "https://www.myinstants.com/en/new/";
 
-    // Category labels and paths exactly as the site publishes them.
-    private static final String[][] CATEGORIES = {
-        {"Anime & Manga", "https://www.myinstants.com/en/categories/anime%20&%20manga/"},
-        {"Games", "https://www.myinstants.com/en/categories/games/"},
-        {"Memes", "https://www.myinstants.com/en/categories/memes/"},
-        {"Movies", "https://www.myinstants.com/en/categories/movies/"},
-        {"Music", "https://www.myinstants.com/en/categories/music/"},
-        {"Politics", "https://www.myinstants.com/en/categories/politics/"},
-        {"Pranks", "https://www.myinstants.com/en/categories/pranks/"},
-        {"Reactions", "https://www.myinstants.com/en/categories/reactions/"},
-        {"Sound Effects", "https://www.myinstants.com/en/categories/sound%20effects/"},
-        {"Sports", "https://www.myinstants.com/en/categories/sports/"},
-        {"Television", "https://www.myinstants.com/en/categories/television/"},
-        {"Tiktok Trends", "https://www.myinstants.com/en/categories/tiktok%20trends/"},
-        {"Viral", "https://www.myinstants.com/en/categories/viral/"},
-        {"Whatsapp Audios", "https://www.myinstants.com/en/categories/whatsapp%20audios/"}
-    };
-
-    // Paths that lead to account pages: /login, /en/accounts/..., /signup, etc.
-    private static final String ACCOUNT_PATH =
-        "^/([a-z]{2}/)?(accounts|login|signin|signup|register)(/.*)?$";
-
-    // Hides the site chrome (nav bar, Install app, account links) and parks the
-    // site's own search form at the top of the body so the native search button can reveal it.
-    private static final String SHELL_JS = """
-        (function () {
-          try {
-            if (!document.getElementById('instants-shell')) {
-              var css = document.createElement('style');
-              css.id = 'instants-shell';
-              css.textContent =
-                'nav.navbar,header,.header,#install-app-nav{display:none!important}' +
-                'body{margin-top:0!important;padding-top:0!important}' +
-                'html{scroll-padding-top:0!important}' +
-                '#instants-search-host{padding:8px 12px 4px}' +
-                '#instants-search-host form{margin:0;display:flex}' +
-                '#instants-search-host img{display:none!important}' +
-                '#instants-search-host input{background:@SURFACE@!important;color:@TEXT@!important;' +
-                'border:1px solid @BORDER@!important;border-radius:8px!important;padding:10px 12px!important}' +
-                '#instants-search-host input::placeholder{color:@TEXT@;opacity:0.55}';
-              (document.head || document.documentElement).appendChild(css);
-            }
-            if (!document.getElementById('instants-search-host')) {
-              var form = document.getElementById('searchbar');
-              if (form && document.body) {
-                var host = document.createElement('div');
-                host.id = 'instants-search-host';
-                host.style.display = 'none';
-                document.body.insertBefore(host, document.body.firstChild);
-                host.appendChild(form);
-                form.className = 'search-form';
-              }
-            }
-            var re = /^(https?:\\/\\/[^\\/]*myinstants\\.com)?\\/([a-z]{2}\\/)?(accounts|login|signin|signup|register)(\\/|$|\\?)/i;
-            var queued = false;
-            function clean() {
-              queued = false;
-              document.querySelectorAll('a[href]').forEach(function (a) {
-                if (re.test(a.getAttribute('href') || '')) {
-                  var item = a.closest('li') || a;
-                  item.style.display = 'none';
-                }
-              });
-            }
-            function schedule() {
-              if (!queued) { queued = true; requestAnimationFrame(clean); }
-            }
-            clean();
-            if (!window.__instantsObserver) {
-              window.__instantsObserver = new MutationObserver(schedule);
-              window.__instantsObserver.observe(document.documentElement,
-                { childList: true, subtree: true });
-            }
-          } catch (e) {}
-        })();
-        """;
-
-    private static final String TOGGLE_SEARCH_JS = """
-        (function () {
-          try {
-            var host = document.getElementById('instants-search-host');
-            if (!host) { location.href = '/en/search/'; return; }
-            var open = host.style.display === 'none';
-            host.style.display = open ? 'block' : 'none';
-            if (open) {
-              var input = host.querySelector('input');
-              if (input) input.focus();
-              window.scrollTo(0, 0);
-            }
-          } catch (e) {}
-        })();
-        """;
-
-    private WebView web;
+    private ListView list;
     private ProgressBar bar;
-    private View errorPanel;
-    private String lastUrl = HOME;
+    private EditText searchField;
+    private View searchDivider;
+    private View statusPanel;
+    private TextView statusTitle;
+    private TextView statusBody;
+    private Button statusAction;
+
+    private CatalogStore store;
+    private AudioCache cache;
+    private SoundAdapter adapter;
+
+    private MediaPlayer player;
+    private Sound playing;
+    private final Set<String> downloading = new HashSet<>();
+    private boolean syncing;
+
+    private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {
+        if (change == AudioManager.AUDIOFOCUS_LOSS) stopPlayback();
+    };
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_main);
 
-        web = findViewById(R.id.web);
+        list = findViewById(R.id.list);
         bar = findViewById(R.id.progress);
-        errorPanel = findViewById(R.id.error_panel);
+        searchField = findViewById(R.id.search_field);
+        searchDivider = findViewById(R.id.search_divider);
+        statusPanel = findViewById(R.id.status_panel);
+        statusTitle = findViewById(R.id.status_title);
+        statusBody = findViewById(R.id.status_body);
+        statusAction = findViewById(R.id.btn_status_action);
 
-        web.setBackgroundColor(color(R.color.bg));
+        store = new CatalogStore(this);
+        store.load();
+        cache = new AudioCache(this);
+        adapter = new SoundAdapter();
+        list.setAdapter(adapter);
+        list.setOnItemClickListener((parent, view, pos, id) -> play(adapter.getItem(pos)));
 
         ImageButton menu = findViewById(R.id.btn_menu);
-        menu.setOnClickListener(this::showNavMenu);
+        menu.setOnClickListener(this::showMenu);
 
         ImageButton search = findViewById(R.id.btn_search);
-        search.setOnClickListener(v -> {
-            web.requestFocus();
-            web.evaluateJavascript(TOGGLE_SEARCH_JS, null);
-            InputMethodManager imm =
-                (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            if (imm != null) imm.showSoftInput(web, InputMethodManager.SHOW_IMPLICIT);
-        });
+        search.setOnClickListener(v -> toggleSearch());
 
-        ImageButton refresh = findViewById(R.id.btn_refresh);
-        refresh.setOnClickListener(v -> web.reload());
+        ImageButton sync = findViewById(R.id.btn_sync);
+        sync.setOnClickListener(v -> startSync());
 
-        findViewById(R.id.btn_retry).setOnClickListener(v -> retry());
-
-        WebSettings s = web.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
-
-        // Site rendering follows the app theme so shell and content match in both modes.
-        boolean night = (getResources().getConfiguration().uiMode
-            & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        if (Build.VERSION.SDK_INT >= 33) {
-            s.setAlgorithmicDarkeningAllowed(night);
-        } else if (Build.VERSION.SDK_INT >= 29) {
-            s.setForceDark(night ? WebSettings.FORCE_DARK_ON : WebSettings.FORCE_DARK_OFF);
-        }
-
-        web.setWebChromeClient(new WebChromeClient() {
+        searchField.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onProgressChanged(WebView v, int p) {
-                bar.setProgress(p);
-                bar.setVisibility(p >= 100 ? View.GONE : View.VISIBLE);
+            public void beforeTextChanged(CharSequence s, int a, int c, int d) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int a, int c, int d) {}
+
+            @Override
+            public void afterTextChanged(Editable e) {
+                refreshList();
             }
         });
 
-        web.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
-                Uri u = r.getUrl();
-                String host = u.getHost();
-                if (host != null && host.endsWith("myinstants.com")) {
-                    String path = u.getPath() == null ? "" : u.getPath();
-                    return path.matches(ACCOUNT_PATH); // block account pages
-                }
-                startActivity(new Intent(Intent.ACTION_VIEW, u));
-                return true;
-            }
-
-            @Override
-            public void onPageStarted(WebView v, String url, android.graphics.Bitmap favicon) {
-                lastUrl = url == null ? HOME : url;
-                showError(false);
-            }
-
-            // Inject before first paint where possible, so the site bar does not flash.
-            @Override
-            public void onPageCommitVisible(WebView v, String url) {
-                v.evaluateJavascript(shellJs(), null);
-            }
-
-            @Override
-            public void onPageFinished(WebView v, String url) {
-                v.evaluateJavascript(shellJs(), null);
-            }
-
-            @Override
-            public void onReceivedError(WebView v, WebResourceRequest r, WebResourceError e) {
-                if (r.isForMainFrame()) {
-                    bar.setVisibility(View.GONE);
-                    showError(true);
-                }
-            }
-        });
-
-        if (b == null) web.loadUrl(HOME); else web.restoreState(b);
-
-        showCreditOnce();
+        refreshList();
     }
 
     private int color(int id) {
         return getResources().getColor(id, getTheme());
     }
 
-    private String hex(int id) {
-        return String.format("#%06X", 0xFFFFFF & color(id));
+    private void refreshList() {
+        if (syncing) {
+            list.setVisibility(View.VISIBLE);
+            statusPanel.setVisibility(View.GONE);
+            return;
+        }
+        List<Sound> items = store.filter(searchField.getText().toString());
+        adapter.setItems(items);
+        if (!items.isEmpty()) {
+            list.setVisibility(View.VISIBLE);
+            statusPanel.setVisibility(View.GONE);
+            return;
+        }
+        if (store.all().isEmpty()) {
+            showStatus(R.string.empty_title, R.string.empty_body,
+                R.string.action_sync, this::startSync);
+        } else {
+            showStatus(R.string.no_match_title, R.string.no_match_body, 0, null);
+        }
     }
 
-    private String shellJs() {
-        return SHELL_JS
-            .replace("@SURFACE@", hex(R.color.surface))
-            .replace("@TEXT@", hex(R.color.text_primary))
-            .replace("@BORDER@", hex(R.color.divider));
+    private void showStatus(int title, int body, int action, Runnable run) {
+        statusTitle.setText(title);
+        statusBody.setText(body);
+        bindStatusAction(action, run);
+        list.setVisibility(View.GONE);
+        statusPanel.setVisibility(View.VISIBLE);
     }
 
-    private void showError(boolean show) {
-        errorPanel.setVisibility(show ? View.VISIBLE : View.GONE);
-        if (show) web.setVisibility(View.INVISIBLE);
-        else web.setVisibility(View.VISIBLE);
+    private void bindStatusAction(int action, Runnable run) {
+        if (action == 0 || run == null) {
+            statusAction.setVisibility(View.GONE);
+            statusAction.setOnClickListener(null);
+        } else {
+            statusAction.setVisibility(View.VISIBLE);
+            statusAction.setText(action);
+            statusAction.setOnClickListener(v -> run.run());
+        }
     }
 
-    private void retry() {
-        showError(false);
-        web.loadUrl(lastUrl);
+    private void startSync() {
+        if (syncing) return;
+        syncing = true;
+        bar.setProgress(0);
+        bar.setVisibility(View.VISIBLE);
+        list.setVisibility(View.VISIBLE);
+        statusPanel.setVisibility(View.GONE);
+
+        new Thread(() -> {
+            List<Sound> fetched = null;
+            try {
+                fetched = CatalogSync.fetchAll((done, total) -> runOnUiThread(() ->
+                    bar.setProgress(total == 0 ? 0 : done * 100 / total)));
+            } catch (Exception e) {
+                fetched = null;
+            }
+            final List<Sound> result = fetched;
+            runOnUiThread(() -> {
+                syncing = false;
+                bar.setVisibility(View.GONE);
+                if (result == null) {
+                    if (store.all().isEmpty()) {
+                        showStatus(R.string.sync_failed_title, R.string.sync_failed_body,
+                            R.string.action_retry, this::startSync);
+                    } else {
+                        refreshList();
+                        toast(R.string.sync_failed_body);
+                    }
+                    return;
+                }
+                if (result.isEmpty()) {
+                    showStatus(R.string.sync_empty_title, R.string.sync_empty_body,
+                        R.string.action_retry, this::startSync);
+                    return;
+                }
+                try {
+                    store.replaceAll(result);
+                } catch (Exception ignored) {
+                }
+                refreshList();
+            });
+        }).start();
     }
 
-    private void showNavMenu(View anchor) {
+    private void play(Sound s) {
+        File cached = cache.file(s.mp3);
+        if (cached.isFile() && cached.length() > 0) {
+            startPlayback(s, cached);
+            return;
+        }
+        if (downloading.contains(s.mp3)) return;
+        downloading.add(s.mp3);
+        adapter.notifyDataSetChanged();
+
+        new Thread(() -> {
+            File got = null;
+            try {
+                got = cache.fetch(s.mp3);
+            } catch (Exception ignored) {
+                got = null;
+            }
+            final File file = got;
+            runOnUiThread(() -> {
+                downloading.remove(s.mp3);
+                adapter.notifyDataSetChanged();
+                if (file == null) {
+                    toast(R.string.need_network);
+                    return;
+                }
+                startPlayback(s, file);
+            });
+        }).start();
+    }
+
+    private void startPlayback(Sound s, File file) {
+        stopPlayback();
+        try {
+            player = new MediaPlayer();
+            player.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            player.setDataSource(file.getAbsolutePath());
+            player.prepare();
+            player.setOnCompletionListener(mp -> stopPlayback());
+            player.start();
+            playing = s;
+            requestFocus();
+        } catch (Exception e) {
+            stopPlayback();
+            toast(R.string.play_failed);
+            return;
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    private void requestFocus() {
+        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (am != null) {
+            am.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+        }
+    }
+
+    private void stopPlayback() {
+        if (player != null) {
+            try {
+                player.stop();
+            } catch (Exception ignored) {
+            }
+            player.release();
+            player = null;
+        }
+        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (am != null) am.abandonAudioFocus(focusListener);
+        playing = null;
+        if (adapter != null) adapter.notifyDataSetChanged();
+    }
+
+    private void toggleSearch() {
+        boolean show = searchField.getVisibility() != View.VISIBLE;
+        searchField.setVisibility(show ? View.VISIBLE : View.GONE);
+        searchDivider.setVisibility(show ? View.VISIBLE : View.GONE);
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (show) {
+            searchField.requestFocus();
+            if (imm != null) imm.showSoftInput(searchField, InputMethodManager.SHOW_IMPLICIT);
+        } else {
+            searchField.setText("");
+            if (imm != null) imm.hideSoftInputFromWindow(searchField.getWindowToken(), 0);
+        }
+        refreshList();
+    }
+
+    private void showMenu(View anchor) {
         PopupMenu menu = new PopupMenu(this, anchor);
         menu.getMenuInflater().inflate(R.menu.nav_menu, menu.getMenu());
-        menu.setOnMenuItemClickListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                web.loadUrl(HOME);
-                return true;
-            }
-            if (id == R.id.nav_recent) {
-                web.loadUrl(RECENT);
-                return true;
-            }
-            if (id == R.id.nav_upload) {
-                web.loadUrl(UPLOAD);
-                return true;
-            }
-            if (id == R.id.nav_categories) {
-                showCategories(anchor);
-                return true;
-            }
-            if (id == R.id.nav_credit) {
-                showCredit();
-                return true;
-            }
-            return false;
-        });
+        menu.setOnMenuItemClickListener(this::onMenu);
         menu.show();
     }
 
-    private void showCategories(View anchor) {
-        PopupMenu menu = new PopupMenu(this, anchor);
-        for (int i = 0; i < CATEGORIES.length; i++) {
-            menu.getMenu().add(Menu.NONE, i, i, CATEGORIES[i][0]);
-        }
-        menu.setOnMenuItemClickListener(item -> {
-            int i = item.getItemId();
-            if (i < 0 || i >= CATEGORIES.length) return false;
-            web.loadUrl(CATEGORIES[i][1]);
+    private boolean onMenu(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.menu_sync) {
+            startSync();
             return true;
-        });
-        menu.show();
+        }
+        if (id == R.id.menu_site) {
+            openSite();
+            return true;
+        }
+        if (id == R.id.menu_clear_cache) {
+            confirmClearCache();
+            return true;
+        }
+        if (id == R.id.menu_credit) {
+            showCredit();
+            return true;
+        }
+        return false;
+    }
+
+    private void openSite() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(HOME)));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void confirmClearCache() {
+        new AlertDialog.Builder(this)
+            .setTitle(R.string.clear_cache_title)
+            .setMessage(R.string.clear_cache_body)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.action_clear_cache, (d, w) -> {
+                cache.clear();
+                toast(R.string.cache_cleared);
+                adapter.notifyDataSetChanged();
+            })
+            .show();
     }
 
     private void showCredit() {
+        String body = getString(R.string.credit_text)
+            + "\n\n" + getString(R.string.cache_usage, cache.sizeLabel());
         new AlertDialog.Builder(this)
-            .setMessage(R.string.credit_text)
+            .setMessage(body)
             .setPositiveButton(android.R.string.ok, null)
             .show();
     }
 
-    // Credit: sounds and website content belong to myinstants.com and its uploaders.
-    private void showCreditOnce() {
-        SharedPreferences p = getSharedPreferences("app", MODE_PRIVATE);
-        if (!p.getBoolean("credit_shown", false)) {
-            Toast.makeText(this, R.string.credit_text, Toast.LENGTH_LONG).show();
-            p.edit().putBoolean("credit_shown", true).apply();
-        }
+    private void toast(int res) {
+        Toast.makeText(this, res, Toast.LENGTH_LONG).show();
     }
 
-    @Override
-    protected void onSaveInstanceState(Bundle out) {
-        super.onSaveInstanceState(out);
-        web.saveState(out);
+    private String statusFor(Sound s) {
+        if (playing != null && playing.mp3.equals(s.mp3)) return getString(R.string.status_playing);
+        if (downloading.contains(s.mp3)) return getString(R.string.status_downloading);
+        if (cache.has(s.mp3)) return getString(R.string.status_saved);
+        return getString(R.string.status_not_saved);
     }
 
     @Override
     public void onBackPressed() {
-        if (web.canGoBack()) web.goBack();
-        else super.onBackPressed();
+        if (searchField.getVisibility() == View.VISIBLE) {
+            toggleSearch();
+            return;
+        }
+        if (playing != null) {
+            stopPlayback();
+            return;
+        }
+        super.onBackPressed();
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopPlayback();
+        super.onDestroy();
+    }
+
+    private class SoundAdapter extends BaseAdapter {
+        private List<Sound> items = new ArrayList<>();
+
+        void setItems(List<Sound> next) {
+            items = next;
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public int getCount() {
+            return items.size();
+        }
+
+        @Override
+        public Sound getItem(int pos) {
+            return items.get(pos);
+        }
+
+        @Override
+        public long getItemId(int pos) {
+            return items.get(pos).mp3.hashCode();
+        }
+
+        @Override
+        public View getView(int pos, View convert, ViewGroup parent) {
+            if (convert == null) {
+                convert = getLayoutInflater().inflate(R.layout.item_sound, parent, false);
+            }
+            Sound s = items.get(pos);
+            ((TextView) convert.findViewById(R.id.name)).setText(s.name);
+            ((TextView) convert.findViewById(R.id.status)).setText(statusFor(s));
+            return convert;
+        }
     }
 }

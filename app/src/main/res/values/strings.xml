@@ -1,16 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Instants</string>
-    <string name="action_refresh">Muat ulang</string>
+    <string name="action_sync">Sinkronkan</string>
+    <string name="action_site">Buka situs</string>
+    <string name="action_clear_cache">Hapus cache</string>
     <string name="action_credit">Kredit</string>
     <string name="action_menu">Menu</string>
     <string name="action_search">Cari</string>
-    <string name="menu_home">Beranda</string>
-    <string name="menu_recent">Baru ditambahkan</string>
-    <string name="menu_categories">Kategori</string>
-    <string name="menu_upload">Unggah</string>
-    <string name="error_title">Tidak bisa terhubung ke myinstants.com</string>
-    <string name="error_body">Periksa koneksi internet, lalu coba lagi.</string>
+    <string name="search_hint">Cari sound</string>
+    <string name="empty_title">Katalog belum ada</string>
+    <string name="empty_body">Sinkronkan untuk mengunduh daftar sound. Setelah itu daftar tetap bisa dibuka tanpa internet.</string>
+    <string name="sync_failed_title">Sinkron gagal</string>
+    <string name="sync_failed_body">Periksa koneksi internet, lalu coba lagi.</string>
+    <string name="sync_empty_title">Daftar sound tidak terbaca</string>
+    <string name="sync_empty_body">Halaman situs berubah bentuk. Coba lagi nanti.</string>
+    <string name="no_match_title">Tidak ada yang cocok</string>
+    <string name="no_match_body">Coba kata lain.</string>
     <string name="action_retry">Coba lagi</string>
+    <string name="status_saved">Tersimpan</string>
+    <string name="status_not_saved">Belum diunduh</string>
+    <string name="status_playing">Memutar</string>
+    <string name="status_downloading">Mengunduh</string>
+    <string name="need_network">Sound ini belum tersimpan. Sambungkan internet untuk mengunduhnya.</string>
+    <string name="play_failed">Tidak bisa memutar sound ini.</string>
+    <string name="cache_cleared">Cache audio dihapus</string>
+    <string name="clear_cache_title">Hapus cache audio?</string>
+    <string name="clear_cache_body">File yang dihapus harus diunduh lagi saat diputar.</string>
+    <string name="cache_usage">Cache audio: %1$s</string>
     <string name="credit_text">Semua suara dan konten milik myinstants.com dan pengunggahnya. Aplikasi tidak resmi, untuk penggunaan pribadi.</string>
 </resources>
