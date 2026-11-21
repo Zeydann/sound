@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Instants</string>
+    <string name="app_name">Soundboard</string>
     <string name="action_sync">Sinkronkan</string>
     <string name="action_site">Buka situs</string>
     <string name="action_clear_cache">Hapus cache</string>

@@ -31,7 +31,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v1.0.${{ github.run_number }}"
-          cp app/build/outputs/apk/debug/app-debug.apk "Instants-$TAG.apk"
-          gh release create "$TAG" "Instants-$TAG.apk" \
-            --title "Instants $TAG" \
-            --notes "Unofficial personal wrapper for myinstants.com. All sounds and content belong to myinstants.com and its uploaders."
+          cp app/build/outputs/apk/debug/app-debug.apk "Soundboard-$TAG.apk"
+          gh release create "$TAG" "Soundboard-$TAG.apk" \
+            --title "Soundboard $TAG" \
+            --notes "Unofficial personal sound browser for myinstants.com. All sounds and content belong to myinstants.com and its uploaders."
