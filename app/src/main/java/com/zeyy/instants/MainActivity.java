@@ -16,8 +16,9 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.GridView;
 import android.widget.ImageButton;
-import android.widget.ListView;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -32,7 +33,7 @@ import java.util.Set;
 public class MainActivity extends Activity {
     private static final String HOME = "https://www.myinstants.com/";
 
-    private ListView list;
+    private GridView list;
     private ProgressBar bar;
     private EditText searchField;
     private View searchDivider;
@@ -98,6 +99,15 @@ public class MainActivity extends Activity {
         });
 
         refreshList();
+    }
+
+    @Override
+    protected void onPostCreate(Bundle b) {
+        super.onPostCreate(b);
+        if (searchField.length() > 0) {
+            searchField.setVisibility(View.VISIBLE);
+            searchDivider.setVisibility(View.VISIBLE);
+        }
     }
 
     private int color(int id) {
@@ -390,6 +400,10 @@ public class MainActivity extends Activity {
                 convert = getLayoutInflater().inflate(R.layout.item_sound, parent, false);
             }
             Sound s = items.get(pos);
+            boolean isPlaying = playing != null && playing.mp3.equals(s.mp3);
+            ImageView icon = convert.findViewById(R.id.icon);
+            icon.setImageResource(isPlaying ? R.drawable.ic_stop : R.drawable.ic_play);
+            icon.setColorFilter(color(isPlaying ? R.color.accent : R.color.text_secondary));
             ((TextView) convert.findViewById(R.id.name)).setText(s.name);
             ((TextView) convert.findViewById(R.id.status)).setText(statusFor(s));
             return convert;

@@ -116,13 +116,18 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <ListView
+        <GridView
             android:id="@+id/list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:divider="@color/divider"
-            android:dividerHeight="@dimen/hairline"
-            android:scrollbarStyle="outsideOverlay" />
+            android:clipToPadding="false"
+            android:columnWidth="@dimen/card_min_width"
+            android:horizontalSpacing="@dimen/card_gap"
+            android:numColumns="2"
+            android:padding="@dimen/grid_pad"
+            android:scrollbarStyle="outsideOverlay"
+            android:stretchMode="columnWidth"
+            android:verticalSpacing="@dimen/card_gap" />
 
         <LinearLayout
             android:id="@+id/status_panel"
