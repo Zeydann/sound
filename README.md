@@ -4,9 +4,11 @@ Unofficial personal sound browser for [myinstants.com](https://www.myinstants.co
 
 Sound list, search and playback are native Android views. The website is only used to sync the catalog and download audio, so the app still opens and plays cached sounds without a connection.
 
-| App | Launcher |
-| --- | --- |
-| ![Soundboard grid](docs/screenshot.png) | ![Soundboard icon](docs/launcher.png) |
+| Dark | Light | Playing |
+| --- | --- | --- |
+| ![Soundboard grid, dark theme](docs/screenshot.png) | ![Soundboard grid, light theme](docs/screenshot-light.png) | ![Sound playing state](docs/screenshot-playing.png) |
+
+![Soundboard icon](docs/launcher.png)
 
 ## What it does
 
