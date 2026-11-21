@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="progress_height">2dp</dimen>
+    <dimen name="icon_size">24dp</dimen>
+    <dimen name="touch_target">48dp</dimen>
+    <dimen name="hairline">1dp</dimen>
+    <dimen name="radius">8dp</dimen>
+    <dimen name="gutter">24dp</dimen>
+    <dimen name="gap">8dp</dimen>
+    <dimen name="title_size">18sp</dimen>
+    <dimen name="body_size">15sp</dimen>
+</resources>

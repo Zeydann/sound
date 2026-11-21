@@ -1,27 +1,28 @@
 package com.zeyy.instants;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.ViewGroup;
+import android.view.MenuItem;
+import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
     private static final String HOME = "https://www.myinstants.com/";
-    private static final int BG = Color.parseColor("#121212");
-    private static final int ACCENT = Color.parseColor("#E5484D");
 
     // Paths that lead to account pages: /login, /en/accounts/..., /signup, etc.
     private static final String ACCOUNT_PATH =
@@ -50,59 +51,49 @@ public class MainActivity extends Activity {
         })();
         """;
 
-    private static final String OFFLINE_HTML =
-        "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
-        + "<style>body{background:#121212;color:#d0d0d0;font-family:sans-serif;"
-        + "display:flex;flex-direction:column;align-items:center;justify-content:center;"
-        + "height:100vh;margin:0;padding:0 32px;text-align:center}"
-        + "a{color:#E5484D;margin-top:20px;font-size:16px}</style></head><body>"
-        + "<div>Tidak bisa terhubung ke myinstants.com</div>"
-        + "<a href='" + HOME + "'>Coba lagi</a></body></html>";
-
     private WebView web;
     private ProgressBar bar;
+    private View errorPanel;
+    private String lastUrl = HOME;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        setContentView(R.layout.activity_main);
 
-        getWindow().setStatusBarColor(BG);
-        getWindow().setNavigationBarColor(BG);
+        web = findViewById(R.id.web);
+        bar = findViewById(R.id.progress);
+        errorPanel = findViewById(R.id.error_panel);
 
-        FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(BG);
+        web.setBackgroundColor(color(R.color.bg));
 
-        web = new WebView(this);
-        web.setBackgroundColor(BG);
-        root.addView(web, new FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        ImageButton refresh = findViewById(R.id.btn_refresh);
+        refresh.setOnClickListener(v -> web.reload());
 
-        bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        bar.setMax(100);
-        bar.getProgressDrawable().setColorFilter(ACCENT, android.graphics.PorterDuff.Mode.SRC_IN);
-        float dp = getResources().getDisplayMetrics().density;
-        root.addView(bar, new FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, Math.round(2 * dp)));
+        ImageButton more = findViewById(R.id.btn_more);
+        more.setOnClickListener(this::showMenu);
 
-        setContentView(root);
+        findViewById(R.id.btn_retry).setOnClickListener(v -> retry());
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
 
-        // Dark rendering for the site. Remove these lines to get the original light look.
+        // Site rendering follows the app theme so shell and content match in both modes.
+        boolean night = (getResources().getConfiguration().uiMode
+            & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         if (Build.VERSION.SDK_INT >= 33) {
-            s.setAlgorithmicDarkeningAllowed(true);
+            s.setAlgorithmicDarkeningAllowed(night);
         } else if (Build.VERSION.SDK_INT >= 29) {
-            s.setForceDark(WebSettings.FORCE_DARK_ON);
+            s.setForceDark(night ? WebSettings.FORCE_DARK_ON : WebSettings.FORCE_DARK_OFF);
         }
 
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView v, int p) {
                 bar.setProgress(p);
-                bar.setVisibility(p >= 100 ? ViewGroup.GONE : ViewGroup.VISIBLE);
+                bar.setVisibility(p >= 100 ? View.GONE : View.VISIBLE);
             }
         });
 
@@ -120,6 +111,12 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onPageStarted(WebView v, String url, android.graphics.Bitmap favicon) {
+                lastUrl = url == null ? HOME : url;
+                showError(false);
+            }
+
+            @Override
             public void onPageFinished(WebView v, String url) {
                 v.evaluateJavascript(HIDE_ACCOUNT_JS, null);
             }
@@ -127,7 +124,8 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView v, WebResourceRequest r, WebResourceError e) {
                 if (r.isForMainFrame()) {
-                    v.loadDataWithBaseURL(null, OFFLINE_HTML, "text/html", "utf-8", null);
+                    bar.setVisibility(View.GONE);
+                    showError(true);
                 }
             }
         });
@@ -137,13 +135,53 @@ public class MainActivity extends Activity {
         showCreditOnce();
     }
 
+    private int color(int id) {
+        return getResources().getColor(id, getTheme());
+    }
+
+    private void showError(boolean show) {
+        errorPanel.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) web.setVisibility(View.INVISIBLE);
+        else web.setVisibility(View.VISIBLE);
+    }
+
+    private void retry() {
+        showError(false);
+        web.loadUrl(lastUrl);
+    }
+
+    private void showMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor);
+        menu.getMenuInflater().inflate(R.menu.main_menu, menu.getMenu());
+        menu.setOnMenuItemClickListener(this::onMenu);
+        menu.show();
+    }
+
+    private boolean onMenu(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.menu_reload) {
+            web.reload();
+            return true;
+        }
+        if (id == R.id.menu_home) {
+            web.loadUrl(HOME);
+            return true;
+        }
+        if (id == R.id.menu_credit) {
+            new AlertDialog.Builder(this)
+                .setMessage(R.string.credit_text)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+            return true;
+        }
+        return false;
+    }
+
     // Credit: sounds and website content belong to myinstants.com and its uploaders.
     private void showCreditOnce() {
         SharedPreferences p = getSharedPreferences("app", MODE_PRIVATE);
         if (!p.getBoolean("credit_shown", false)) {
-            Toast.makeText(this,
-                "Content by myinstants.com and its uploaders. Unofficial personal wrapper.",
-                Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.credit_text, Toast.LENGTH_LONG).show();
             p.edit().putBoolean("credit_shown", true).apply();
         }
     }
