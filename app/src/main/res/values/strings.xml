@@ -2,9 +2,13 @@
 <resources>
     <string name="app_name">Instants</string>
     <string name="action_refresh">Muat ulang</string>
-    <string name="action_home">Beranda</string>
     <string name="action_credit">Kredit</string>
-    <string name="action_more">Menu lainnya</string>
+    <string name="action_menu">Menu</string>
+    <string name="action_search">Cari</string>
+    <string name="menu_home">Beranda</string>
+    <string name="menu_recent">Baru ditambahkan</string>
+    <string name="menu_categories">Kategori</string>
+    <string name="menu_upload">Unggah</string>
     <string name="error_title">Tidak bisa terhubung ke myinstants.com</string>
     <string name="error_body">Periksa koneksi internet, lalu coba lagi.</string>
     <string name="action_retry">Coba lagi</string>
