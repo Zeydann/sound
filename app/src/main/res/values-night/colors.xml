@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="bg">#0F0F0F</color>
-    <color name="surface_card">#191919</color>
+    <color name="surface_card">#1E1E1E</color>
+    <color name="play_circle">#2A2A2A</color>
     <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#A0A0A0</color>
+    <color name="text_secondary">#B0B0B0</color>
     <color name="divider">#262626</color>
     <color name="icon">#EDEDED</color>
     <color name="accent">#4A9EFF</color>
