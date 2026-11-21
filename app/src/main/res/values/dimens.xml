@@ -13,9 +13,10 @@
     <dimen name="meta_size">12sp</dimen>
     <dimen name="grid_pad">12dp</dimen>
     <dimen name="card_gap">8dp</dimen>
-    <dimen name="card_pad">12dp</dimen>
-    <dimen name="card_icon">20dp</dimen>
+    <dimen name="card_pad">16dp</dimen>
+    <dimen name="card_icon">28dp</dimen>
+    <dimen name="card_icon_gap">12dp</dimen>
     <dimen name="card_min_width">150dp</dimen>
-    <dimen name="card_height">112dp</dimen>
-    <dimen name="card_name_size">14sp</dimen>
+    <dimen name="card_height">88dp</dimen>
+    <dimen name="card_name_size">15sp</dimen>
 </resources>
